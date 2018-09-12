@@ -13,10 +13,11 @@ batch_size = 2
 seq_len = 512
 start_time = time.time()
 fonts = {'family' : 'Times New Roman'}
+modelSavePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Dense_Model"
 
 
 """ Import data """
-filepath = './SweepSineData'
+filepath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\SweepSineData"
 fileList = os.listdir(filepath)
 
 # Input training signal
@@ -32,7 +33,7 @@ fs, y_train = wavfile.read(filename)
 y_train = y_train/32768.0*10
 
 # Input testing signal
-inputFilePath = './1hrData/ProcessedShortData/input'
+inputFilePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData\input"
 inputFileList = os.listdir(inputFilePath)
 inputFileName = os.path.join(inputFilePath, inputFileList[0])
 print('Testing file name of x: ', inputFileList[0])
@@ -40,7 +41,7 @@ fs, x_test = wavfile.read(inputFileName)
 x_test = x_test/32768.0*10
 
 # Output testing signal
-outputFilePath = './1hrData/ProcessedShortData/output'
+outputFilePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData\output"
 outputFileList = os.listdir(outputFilePath)
 outputFilename = os.path.join(outputFilePath, outputFileList[0])
 print('Testing file name of y: ', outputFileList[0])
@@ -140,14 +141,14 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
         plt.draw()
         plt.pause(1e-17)    
 
-        # Save model        
+        # Save model  
         if step % 10000 == 0:
-            tf.train.Saver().save(sess, './Dense_Model/Dense_Model.ckpt', global_step=step)
+            tf.train.Saver().save(sess, modelSavePath, global_step=step)
 
     plt.show()
     
     # Save the final model
-    tf.train.Saver().save(sess, './Dense_Model/Dense_Model.ckpt', global_step=step)
+    tf.train.Saver().save(sess, modelSavePath, global_step=step)
     
     # Count time
     training_time = time.time() - start_time
