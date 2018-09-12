@@ -14,38 +14,36 @@ seq_len = 512
 start_time = time.time()
 fonts = {'family' : 'Times New Roman'}
 modelSavePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Dense_Model"
+trainFilePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\SweepSineData"
+testFilePath  = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData"
 
 
 """ Import data """
-filepath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\SweepSineData"
-fileList = os.listdir(filepath)
-
+trainFileList = os.listdir(trainFilePath)
 # Input training signal
-filename = os.path.join(filepath, fileList[1])
-print('Training file name of x: ', fileList[1])
-fs, x_train = wavfile.read(filename)
+trainFlie = os.path.join(trainFilePath, trainFileList[1])
+print('Training file name of x: ', trainFileList[1])
+fs, x_train = wavfile.read(trainFlie)
 x_train = x_train/32768.0*10
 
 # Output training signal
-filename = os.path.join(filepath, fileList[0])
-print('Training file name of y: ', fileList[0])
-fs, y_train = wavfile.read(filename)
+trainFlie = os.path.join(trainFilePath, trainFileList[0])
+print('Training file name of y: ', trainFileList[0])
+fs, y_train = wavfile.read(trainFlie)
 y_train = y_train/32768.0*10
 
 # Input testing signal
-inputFilePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData\input"
-inputFileList = os.listdir(inputFilePath)
-inputFileName = os.path.join(inputFilePath, inputFileList[0])
-print('Testing file name of x: ', inputFileList[0])
-fs, x_test = wavfile.read(inputFileName)
+testFileList = os.listdir(os.path.join(testFilePath, 'input'))
+testFile = os.path.join(testFilePath, 'input', testFileList[0])
+print('Testing file name of x: ', testFileList[0])
+fs, x_test = wavfile.read(testFile)
 x_test = x_test/32768.0*10
 
 # Output testing signal
-outputFilePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData\output"
-outputFileList = os.listdir(outputFilePath)
-outputFilename = os.path.join(outputFilePath, outputFileList[0])
-print('Testing file name of y: ', outputFileList[0])
-fs, y_test = wavfile.read(outputFilename)
+testFileList = os.listdir(os.path.join(testFilePath, 'output'))
+testFile = os.path.join(testFilePath, 'output', testFileList[0])
+print('Testing file name of y: ', testFileList[0])
+fs, y_test = wavfile.read(testFile)
 y_test = y_test/32768.0*10
 
 
@@ -142,8 +140,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
         plt.pause(1e-17)    
 
         # Save model  
-        if step % 10000 == 0:
-            tf.train.Saver().save(sess, modelSavePath, global_step=step)
+#        if step % 10000 == 0:
+#            tf.train.Saver().save(sess, modelSavePath, global_step=step)
 
     plt.show()
     
