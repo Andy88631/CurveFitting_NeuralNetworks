@@ -1,10 +1,10 @@
 # Curve Fitting with Neural Networks
 
 ## Dependency Library
-[BatchUp][1]
+[BatchUp][1] - Python library for extracting mini-batches of data from a data source for the purpose of training neural networks.
 
 ## Data
-[Sweep sine data][2]
+[Sweep sine data][2] - Include input & output signal.
 
 
 [1]: https://github.com/Britefury/batchup
