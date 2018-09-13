@@ -49,9 +49,12 @@ y_test = y_test/32768.0*10
 
 """ Data preprocessing """
 # Zero padding
-lenDiff = len(y_train)-len(x_train)
-y_train = np.pad(y_train, (abs(lenDiff),0), 'constant', constant_values=(0))
-
+lenDiff = len(x_train) - len(y_train)
+if lenDiff > 0:
+    y_train = np.pad(y_train, (abs(lenDiff),0), 'constant', constant_values=(0))
+else:
+    x_train = np.pad(x_train, (abs(lenDiff),0), 'constant', constant_values=(0))
+    
 # Split every single batch into one row
 dlen = len(x_train)/abs(seq_len)
 x_train = np.array_split(x_train, dlen)
@@ -140,8 +143,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
         plt.pause(1e-17)    
 
         # Save model  
-#        if step % 10000 == 0:
-#            tf.train.Saver().save(sess, modelSavePath, global_step=step)
+        if step % 10000 == 0:
+            tf.train.Saver().save(sess, modelSavePath, global_step=step)
 
     plt.show()
     
@@ -165,8 +168,6 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
                                                          learning_rate_:0.0001})  
         plotObj.append(LV)
         step += 1
-#        if step >= 10:
-#            plotObj.append(np.mean(LVObj))  # Compute the average loss value of 10 batchs
             
         # Plot 
         plt.figure(2)
