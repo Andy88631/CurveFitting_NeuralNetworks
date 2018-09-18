@@ -10,10 +10,12 @@ import os
 
 """ Parameters """
 batch_size = 2
-seq_len = 512
+seq_len    = 512
+epoch      = 180
+learning_rate = 0.0001
 start_time = time.time()
 fonts = {'family' : 'Times New Roman'}
-modelSavePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Dense_Model"
+modelSavePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Model_Dense\Model_Dense.ckpt"
 trainFilePath = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\SweepSineData"
 testFilePath  = r"D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData"
 
@@ -61,9 +63,9 @@ x_train = np.array_split(x_train, dlen)
 y_train = np.array_split(y_train, dlen)
 
 # Make validation data
-x_validation = x_train[-10:]
+x_validation = x_train[-11:-1]
 del(x_train[-10:])
-y_validation = y_train[-10:]
+y_validation = y_train[-11:-1]
 del(y_train[-10:])
 
 x_train_data = np.expand_dims(x_train, axis=2)
@@ -99,104 +101,100 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
                 graph=graph) as sess:
 
     sess.run(tf.global_variables_initializer())
+          
+    LVObj      = []
+    meanLV     = []
+    meanRS     = []
+    validRSObj = []
+    trainRSObj = []
+    trainDataSets = data_source.ArrayDataSource([x_train_data, y_train_data], repeats=1)
+    for e in range(epoch):
+        """ Training loss """
+        i = 0
+        for (x_input, y_input) in trainDataSets.batch_iterator(batch_size=batch_size):
+            feed = {x:x_input, y:y_input, learning_rate_:learning_rate}
+            trainLV, _, Predict_trainValue, True_trainOutput = sess.run([cost,optimizer,yOut,y2],
+                                                                        feed_dict=feed)  
+            LVObj.append(trainLV)
+            i += 1
+            if i % 10 == 0:
+                meanLV.append(np.mean(LVObj))  # Compute the average loss value of 10 batchs
+                
+            """ Plot """
+            print(trainLV)
+            # Plot loss value
+            plt.subplot(221)
+            plt.cla()
+            plt.subplots_adjust(top=0.925,bottom=0.06,left=0.145,right=0.93,
+                                hspace=0.2,wspace=0.2)
+            plt.rc('font', **fonts)
+            plt.xlabel('Iteration')
+            plt.ylabel('Loss value')
+            plt.title('Loss value: %s' %trainLV + ' , Epoch: %s' %e)
+            plt.plot(meanLV)
+            plt.draw()
+            plt.pause(1e-17)
+            plt.grid(True)
+            # Plot curves
+            plt.subplot(212)
+            plt.cla()
+            plt.plot(Predict_trainValue[0,:], label='Predict value')
+            plt.plot(True_trainOutput[0,:], color='red', label='True value')
+            plt.title('Example of curves')
+            plt.xlabel('Sequence length')
+            plt.ylabel('Amplitude')
+            plt.legend(loc='upper right')
+            plt.ylim((-0.3,0.3))
+            plt.draw()
+            plt.pause(1e-17)   
+            plt.grid(True)
+            plt.show()
     
-    """ Train Accuracy """    
-    step    = 0
-    LVObj   = []
-    plotObj = []
-    trainDataSets = data_source.ArrayDataSource([x_train_data, y_train_data], repeats=100)
-    for (x_input, y_input) in trainDataSets.batch_iterator(batch_size=batch_size):
-        LV, _, Predict_trainValue, True_trainOutput = sess.run([cost,optimizer,yOut,y2],
-                                                 feed_dict={x:x_input,y:y_input,
-                                                 learning_rate_:0.0001})  
-        LVObj.append(LV)
-        step += 1
-        if step >= 10:
-            plotObj.append(np.mean(LVObj))  # Compute the average loss value of 10 batchs
-            
-        # Plot 
-        plt.figure(1)
-        print(LV)
+        """ Save model """
+        if e % 20 == 0:
+            tf.train.Saver().save(sess, modelSavePath, global_step=e)
+            print('Model of No. %f epoch saved!' %e)
+        
+        """ Compute Training & Validation R-Square """
+        validationDataSets = data_source.ArrayDataSource([x_validation_data, 
+                                                          y_validation_data], repeats=1)
+        for (x_input, y_input) in validationDataSets.batch_iterator(batch_size=batch_size):
+            feed = {x:x_input, y:y_input, learning_rate_:learning_rate}
+            validLV, _, Predict_validValue, True_validOutput = sess.run([cost,optimizer,yOut,y2],
+                                                                             feed_dict=feed)  
+            # R-Square (coefficient of determination)
+            validRS = (np.corrcoef(Predict_validValue, True_validOutput))**2
+            validRSObj.append(validRS[0,1])
+#                trainRS = (np.corrcoef(True_trainOutput,Predict_validValue))**2
+#                trainRSObj.append(trainRS[0,1])
+        meanRS.append(np.mean(validRSObj))
+        
+        """ Plot """
         # Plot loss value
-        plt.subplot(211)
+        plt.subplot(222)
         plt.cla()
         plt.subplots_adjust(top=0.925,bottom=0.06,left=0.145,right=0.93,
                             hspace=0.2,wspace=0.2)
         plt.rc('font', **fonts)
-        plt.xlabel('Iteration')
-        plt.ylabel('Loss value')
-        plt.title('Loss value: %s' %LV + ' , Iteration: %s' %step)
-        plt.plot(plotObj)
+        plt.xlabel('Epoch')
+        plt.ylabel('R-Square value')
+        plt.title('Coefficient of determination')
+        plt.plot(meanRS, label='Validation')
+#            plt.plot(trainRSObj, label='Train')
+        plt.legend(loc='upper left')
         plt.draw()
         plt.pause(1e-17)
         plt.grid(True)
-        # Plot curves
-        plt.subplot(212)
-        plt.cla()
-        plt.plot(Predict_trainValue[0,:], label='Predict value')
-        plt.plot(True_trainOutput[0,:], color='red', label='True value')
-        plt.xlabel('Sequence length')
-        plt.ylabel('Amplitude')
-        plt.legend(loc='upper right')
-        plt.ylim((-0.3,0.3))
-        plt.draw()
-        plt.pause(1e-17)    
-
-        # Save model  
-        if step % 10000 == 0:
-            tf.train.Saver().save(sess, modelSavePath, global_step=step)
-
-    plt.show()
+        plt.show() 
     
     # Save the final model
-    tf.train.Saver().save(sess, modelSavePath, global_step=step)
+    tf.train.Saver().save(sess, modelSavePath, global_step=e)
     
     # Count time
     training_time = time.time() - start_time
     training_time = time.strftime("%H:%M:%S", time.gmtime(training_time))
     print('Training time: ' + str(training_time))
-    
-    """ Validation Accuracy """
-    step    = 0
-    plotObj = []
-    LVObj   = []
-    validationDataSets = data_source.ArrayDataSource([x_validation_data, y_validation_data],
-                                                     repeats=1)
-    for (x_input, y_input) in validationDataSets.batch_iterator(batch_size=batch_size):
-        LV, _, Predict_trainValue, True_trainOutput = sess.run([cost,optimizer,yOut,y2],
-                                                         feed_dict={x:x_input,y:y_input,
-                                                         learning_rate_:0.0001})  
-        plotObj.append(LV)
-        step += 1
-            
-        # Plot 
-        plt.figure(2)
-        print(LV)
-        # Plot loss value
-        plt.subplot(211)
-        plt.cla()
-        plt.subplots_adjust(top=0.925,bottom=0.06,left=0.145,right=0.93,
-                            hspace=0.2,wspace=0.2)
-        plt.rc('font', **fonts)
-        plt.xlabel('Iteration')
-        plt.ylabel('Loss value')
-        plt.title('Loss value: %s' %LV + ' , Iteration: %s' %step)
-        plt.plot(plotObj)
-        plt.draw()
-        plt.pause(1e-17)
-        plt.grid(True)
-        # Plot curves
-        plt.subplot(212)
-        plt.cla()
-        plt.plot(Predict_trainValue[0,:], label='Predict value')
-        plt.plot(True_trainOutput[0,:], color='red', label='True value')
-        plt.xlabel('Sequence length')
-        plt.ylabel('Amplitude')
-        plt.legend(loc='upper right')
-        plt.ylim((-0.3,0.3))
-        plt.draw()
-        plt.pause(1e-17)
-    
+ 
     # Memory recycle
     sess.close() 
 
