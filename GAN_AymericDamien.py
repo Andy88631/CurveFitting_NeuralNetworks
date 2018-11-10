@@ -1,7 +1,8 @@
 """ Generative Adversarial Networks (GAN).
+@author: YenTa Chiang
 
-Using generative adversarial networks (GAN) to generate digit images from a
-noise distribution.
+Using generative adversarial networks (GAN) to transfer the feature of one
+earphone to another.
 
 References:
     - Generative adversarial nets. I Goodfellow, J Pouget-Abadie, M Mirza,
@@ -15,7 +16,7 @@ Links:
     - [MNIST Dataset](http://yann.lecun.com/exdb/mnist/).
     - [Xavier Glorot Init](www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.../AISTATS2010_Glorot.pdf).
 
-Author: Aymeric Damien
+Original Author: Aymeric Damien
 Project: https://github.com/aymericdamien/TensorFlow-Examples/
 """
 
