@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Sep 29 17:46:50 2018
-
-@author: YenTa Chiang
-"""
-
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,32 +11,32 @@ import os
 """ Parameters """
 batch_size = 2
 seq_len    = 512
-epoch      = 180
+epoch      = 60
 learning_rate = 0.0001
 start_time = time.time()
 fonts = {'family' : 'Times New Roman'}
-musicType = 'Funk'
+earphone = 'XiaoMi'
 
 modelSavePath = os.path.join(
         r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Model_Dense', 
-        'Inverse_'+musicType+'Data', 'Model_Dense_inverse_Funk.ckpt')
+        earphone, 'Model_Dense_SweptSine_XiaoMi.ckpt')
 
 #trainFilePath = r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\SweepSineData'
-trainFilePath = r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData\ProcessedShortData'
+trainFilePath = r'D:\Dropbox\ElectroAcoustic\Thesis\EarphoneMeasurement\SoundChick\RecordAudio\Record10s'
 
 #testFilePath  = r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData'
 
 
 """ Import data """
 # Input training signal
-trainFileList = os.listdir(os.path.join(trainFilePath, 'input'))
+trainFileList = os.listdir(os.path.join(trainFilePath, 'output'))
 trainFlie = os.path.join(trainFilePath, 'output', trainFileList[0])
 print('Training file name of x: ', trainFileList[0])
 fs, x_train = wavfile.read(trainFlie)
 x_train = x_train/32768.0*10
 
 # Output training signal
-trainFileList = os.listdir(os.path.join(trainFilePath, 'output'))
+trainFileList = os.listdir(os.path.join(trainFilePath, 'input'))
 trainFlie = os.path.join(trainFilePath, 'input', trainFileList[0])
 print('Training file name of y: ', trainFileList[0])
 fs, y_train = wavfile.read(trainFlie)
@@ -69,20 +62,29 @@ y_train = y_train/32768.0*10
 lenDiff = len(x_train) - len(y_train)
 if lenDiff > 0:
     y_train = np.pad(y_train, (abs(lenDiff),0), 'constant', constant_values=(0))
-else:
+elif lenDiff < 0:
     x_train = np.pad(x_train, (abs(lenDiff),0), 'constant', constant_values=(0))
     
 # Split every single batch into one row
-dlen = len(x_train)/abs(seq_len)
+dlen = np.floor(len(x_train)/abs(seq_len))
+
+# Odd to even
+if (dlen % 2) > 0:
+    dlen = dlen - 1
+
+# Trim data
+x_train = x_train[:int(seq_len*dlen)]
+y_train = y_train[:int(seq_len*dlen)]
 x_train = np.array_split(x_train, dlen)
 y_train = np.array_split(y_train, dlen)
 
 # Make validation data
-x_validation = x_train[-11:-1]
+x_validation = x_train[-10:]
 del(x_train[-10:])
-y_validation = y_train[-11:-1]
+y_validation = y_train[-10:]
 del(y_train[-10:])
 
+# Expand dimension
 x_train_data = np.expand_dims(x_train, axis=2)
 y_train_data = np.expand_dims(y_train, axis=2)
 x_validation_data = np.expand_dims(x_validation, axis=2)
@@ -178,14 +180,14 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
     
         """ Save model """
         if e % 60 == 0:
-            tf.train.Saver().save(sess, modelSavePath, global_step=e)
+#            tf.train.Saver().save(sess, modelSavePath, global_step=e)
             print('Model of No. %f epoch saved!' %e)
         
-        """ Validation  """
+#        """ Validation  """
         validationDataSets = data_source.ArrayDataSource([x_validation_data, 
                                                           y_validation_data], repeats=1)
-        for (x_input, y_input) in validationDataSets.batch_iterator(batch_size=batch_size):
-            feed = {x:x_input, y:y_input, learning_rate_:learning_rate}
+        for (x_input_v, y_input_v) in validationDataSets.batch_iterator(batch_size=batch_size):
+            feed = {x:x_input_v, y:y_input_v, learning_rate_:learning_rate}
             validLV, _, Predict_validValue, True_validOutput = sess.run([cost,optimizer,yOut,y2],
                                                                              feed_dict=feed)
             validLVObj.append(validLV)   
@@ -227,7 +229,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
     dict_data= {'Train_Predict': TrainPredictData, 'Train_True': TrainTrueData,
                 'Valid_Predict': ValidPredictData, 'Valid_True': ValidTrueData,
                 'Train_Loss': meanTrainLV, 'Valid_Loss': meanValidLV, 'R_Square': meanRS[e]}
-    sio.savemat(os.path.join(SavePath, 'DenseResult_Inverse_'+musicType+'.mat'), dict_data)
+    sio.savemat(os.path.join(SavePath, 'DenseResult_'+earphone+'.mat'), dict_data)
     
     # Count time
     training_time = time.time() - start_time
