@@ -34,12 +34,12 @@ fonts = {'family' : 'Times New Roman'}
 #num_steps = 100000
 batch_size = 64
 learning_rate = 0.0001
-epoch = 100000
+epoch = 1000
 
 # Network Params
 seq_len = 128
-gen_hidden_dim = 256
-disc_hidden_dim = 256
+gen_hidden_dim = 64
+disc_hidden_dim = 64
 noise_dim = seq_len # Noise data points
 
 
@@ -117,41 +117,54 @@ biases = {
 """ Generator """
 def generator(x):
     # Layer 1
-    hidden_layer = tf.matmul(x, weights['gen_hidden1'])             # 64x128 * 128x256 = 64x256
-    hidden_layer = tf.add(hidden_layer, biases['gen_hidden1'])      
-    hidden_layer = tf.nn.tanh(hidden_layer)
-#    hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    hidden_layer = tf.matmul(x, weights['gen_hidden1'])         # batch_size x seq_len * seq_len x gen_hidden_dim
+    hidden_layer = tf.add(hidden_layer, biases['gen_hidden1'])  # = batch_size x gen_hidden_dim
+    
+    # hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    
     # Normalization
-    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
-    scale = tf.Variable(tf.ones([1]))
-    shift = tf.Variable(tf.zeros([1]))
-    epsilon = 0.001
-    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+#    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
+#    scale = tf.Variable(tf.ones([1]))
+#    shift = tf.Variable(tf.zeros([1]))
+#    epsilon = 0.001
+#    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    
+    hidden_layer = tf.nn.sigmoid(hidden_layer)
+    
     # Layer 2
-    hidden_layer = tf.matmul(hidden_layer, weights['gen_hidden2'])  # 64x256 * 256x512 = 64x512
-    hidden_layer = tf.add(hidden_layer, biases['gen_hidden2'])
-    hidden_layer = tf.nn.tanh(hidden_layer)
-#    hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    hidden_layer = tf.matmul(hidden_layer, weights['gen_hidden2'])  # batch_size x gen_hidden_dim * gen_hidden_dim x gen_hidden_dim*2
+    hidden_layer = tf.add(hidden_layer, biases['gen_hidden2'])      # = batch_size x gen_hidden_dim*2
+    
+    # hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    
     # Normalization
-    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
-    scale = tf.Variable(tf.ones([1]))
-    shift = tf.Variable(tf.zeros([1]))
-    epsilon = 0.001
-    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+#    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
+#    scale = tf.Variable(tf.ones([1]))
+#    shift = tf.Variable(tf.zeros([1]))
+#    epsilon = 0.001
+#    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    
+    hidden_layer = tf.nn.sigmoid(hidden_layer)
+    
     # Layer 3
-    hidden_layer = tf.matmul(hidden_layer, weights['gen_hidden3'])  # 64x512 * 512x256 = 64x256
-    hidden_layer = tf.add(hidden_layer, biases['gen_hidden3'])
-    hidden_layer = tf.nn.tanh(hidden_layer)
+    hidden_layer = tf.matmul(hidden_layer, weights['gen_hidden3'])  # batch_size x gen_hidden_dim*2 * gen_hidden_dim*2 x seq_len
+    hidden_layer = tf.add(hidden_layer, biases['gen_hidden3'])      # = batch_size x seq_len
+
+    # hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    
     # Normalization
-    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
-    scale = tf.Variable(tf.ones([1]))
-    shift = tf.Variable(tf.zeros([1]))
-    epsilon = 0.001
-    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
-    # Fully connect
-    out_layer = tf.matmul(hidden_layer, weights['gen_out'])
+#    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
+#    scale = tf.Variable(tf.ones([1]))
+#    shift = tf.Variable(tf.zeros([1]))
+#    epsilon = 0.001
+#    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    
+    hidden_layer = tf.nn.sigmoid(hidden_layer)
+    
+    # Layer 4: Output layer
+    out_layer = tf.matmul(hidden_layer, weights['gen_out'])     # batch_size x seq_len * seq_len x 1
     out_layer = tf.add(out_layer, biases['gen_out'])
-#    out_layer = tf.nn.tanh(out_layer)
+    out_layer = tf.nn.tanh(out_layer)
     return out_layer
 
 
@@ -160,39 +173,50 @@ def discriminator(x):
     # Layer 1
     hidden_layer = tf.matmul(x, weights['disc_hidden1'])
     hidden_layer = tf.add(hidden_layer, biases['disc_hidden1'])
-    hidden_layer = tf.nn.tanh(hidden_layer)
+    
 #    hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    
     # Normalization
-    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
-    scale = tf.Variable(tf.ones([1]))
-    shift = tf.Variable(tf.zeros([1]))
-    epsilon = 0.001
-    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    # fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
+    # scale = tf.Variable(tf.ones([1]))
+    # shift = tf.Variable(tf.zeros([1]))
+    # epsilon = 0.001
+    # hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    
+    hidden_layer = tf.nn.sigmoid(hidden_layer)
+    
     # Layer 2
     hidden_layer = tf.matmul(hidden_layer, weights['disc_hidden2'])
     hidden_layer = tf.add(hidden_layer, biases['disc_hidden2'])
-    hidden_layer = tf.nn.tanh(hidden_layer)
+#    
 #    hidden_layer = tf.nn.dropout(hidden_layer, dropout)
+    
     # Normalization
-    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
-    scale = tf.Variable(tf.ones([1]))
-    shift = tf.Variable(tf.zeros([1]))
-    epsilon = 0.001
-    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+#    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
+#    scale = tf.Variable(tf.ones([1]))
+#    shift = tf.Variable(tf.zeros([1]))
+#    epsilon = 0.001
+#    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    
+    hidden_layer = tf.nn.sigmoid(hidden_layer)
+    
     # Layer 3
     hidden_layer = tf.matmul(hidden_layer, weights['disc_hidden3'])
     hidden_layer = tf.add(hidden_layer, biases['disc_hidden3'])
-    hidden_layer = tf.nn.tanh(hidden_layer)
+    
     # Normalization
-    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
-    scale = tf.Variable(tf.ones([1]))
-    shift = tf.Variable(tf.zeros([1]))
-    epsilon = 0.001
-    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
-    # Fully connect
+#    fc_mean, fc_var = tf.nn.moments(hidden_layer, axes=[0])
+#    scale = tf.Variable(tf.ones([1]))
+#    shift = tf.Variable(tf.zeros([1]))
+#    epsilon = 0.001
+#    hidden_layer = tf.nn.batch_normalization(hidden_layer, fc_mean, fc_var, shift, scale, epsilon)
+    
+    hidden_layer = tf.nn.sigmoid(hidden_layer)
+    
+    # Layer 4: Output layer
     out_layer = tf.matmul(hidden_layer, weights['disc_out'])
     out_layer = tf.add(out_layer, biases['disc_out'])
-#    out_layer = tf.nn.tanh(out_layer)
+    out_layer = tf.nn.sigmoid(out_layer)
     return out_layer
 
 """ Build Networks """
@@ -254,7 +278,7 @@ with tf.Session() as sess:
             i += 1
     
             # Generate noise to feed to the generator
-            z = np.random.uniform(-1., 1., size=[batch_size, noise_dim])
+#            z = np.random.uniform(-1., 1., size=[batch_size, noise_dim])
     
             # Train
             feed_dict = {disc_input: batch_y, gen_input: batch_x, dropout: 0.4}
@@ -262,17 +286,18 @@ with tf.Session() as sess:
                                     feed_dict=feed_dict)
             gl_append.append(gl)
             dl_append.append(dl)
-            if i % 100 == 0 or i == 1:
+            if i % 10 == 0 or i == 1:
                 print('Step %i: Generator Loss: %f, Discriminator Loss: %f' % (i, gl, dl))
                 plt.subplot(211)
-#                plt.cla()
+                plt.cla()
                 plt.subplots_adjust(top=0.925,bottom=0.06,left=0.145,right=0.93,
                                     hspace=0.2,wspace=0.2)
                 plt.rc('font', **fonts)
                 plt.xlabel('Iteration')
                 plt.ylabel('Loss value')
                 plt.plot(gl_append, c='#74BCFF', label='Generator')
-                plt.plot(gl_append, c='#FF9359', label='Discriminator')
+                plt.plot(dl_append, c='#FF9359', label='Discriminator')
+                plt.legend(loc='upper right')
                 plt.draw()
                 plt.pause(1e-17)   
                 plt.grid(True)
