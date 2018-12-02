@@ -47,15 +47,15 @@ noise_dim = seq_len # Noise data points
 trainFilePath = r'D:\Dropbox\ElectroAcoustic\Thesis\EarphoneMeasurement\SoundChick\RecordAudio\Record10s'
 # Input training signal
 trainFileList = os.listdir(os.path.join(trainFilePath, 'output'))
-trainFlie = os.path.join(trainFilePath, 'output', trainFileList[0])
-print('Training file name of x: ', trainFileList[0])
+trainFlie = os.path.join(trainFilePath, 'output', trainFileList[1])
+print('Training file name of x: ', trainFileList[1])
 fs, x_train = wavfile.read(trainFlie)
 x_train = x_train/32768.0*10
 
 # Output training signal
 trainFileList = os.listdir(os.path.join(trainFilePath, 'output'))
-trainFlie = os.path.join(trainFilePath, 'output', trainFileList[1])
-print('Training file name of y: ', trainFileList[1])
+trainFlie = os.path.join(trainFilePath, 'output', trainFileList[0])
+print('Training file name of y: ', trainFileList[0])
 fs, y_train = wavfile.read(trainFlie)
 y_train = y_train/32768.0*10
 
