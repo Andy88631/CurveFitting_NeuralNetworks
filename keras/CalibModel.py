@@ -91,7 +91,7 @@ with open('EarphoneModel_ASUS.pickle', 'rb') as EarphoneModel:
 
 
 #%% Train Calibration Model
-batchNum = len(x_train)/seq_len
+int batchNum = len(x_train)/seq_len
 for e in range(epoch):
     for step in range(0, len(x_train), seq_len):
         x_trainForPred = x_train[step:step+seq_len]
@@ -103,7 +103,7 @@ for e in range(epoch):
         cost = model_calib.train_on_batch(calibSignal, x_trainForPred)
     
         if step % seq_len == 0:
-            b = step/seq_len
+            int b = step/seq_len
             print('Epoch: %s/%s Step: %s/%s train cost: %s' %(e, epoch, b, batchNum, cost))
 
 
