@@ -1,10 +1,13 @@
 # Curve Fitting with Neural Networks
+Note: This project include TensorFlow version and Keras version code.
+
 ## Requirements
 * TensorFlow 1.6.0  
 * Python 3.5
+* Keras
 
 ## Dependency Library
-[BatchUp][1] - Python library for extracting mini-batches of data from a data source for the purpose of training neural networks.
+[BatchUp][1] - Python library for extracting mini-batches of data from a data source for the purpose of training neural networks. (Only for TensoeFlow version)
 
 ## Data
 [Sweep sine data][2] - Include input & output signal.
