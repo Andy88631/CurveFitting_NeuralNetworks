@@ -11,7 +11,7 @@ import os
 """ Parameters """
 batch_size = 2
 seq_len    = 512
-epoch      = 60
+epoch      = 10
 learning_rate = 0.0001
 start_time = time.time()
 fonts = {'family' : 'Times New Roman'}
@@ -19,12 +19,12 @@ earphone = 'XiaoMi'
 
 modelSavePath = os.path.join(
         r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Model_Dense', 
-        earphone, 'Model_Dense_SweptSine_XiaoMi.ckpt')
+        earphone, 'InverseModel_Dense_SweptSine_XiaoMi.ckpt')
 
 #trainFilePath = r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\SweepSineData'
 trainFilePath = r'D:\Dropbox\ElectroAcoustic\Thesis\EarphoneMeasurement\SoundChick\RecordAudio\Record10s'
 
-#testFilePath  = r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\1hrMusicData'
+testFilePath  = r'D:\Dropbox\ElectroAcoustic\Thesis\EarphoneMeasurement\SoundChick\Stimulus\SweptSine_20-100.wav'
 
 
 """ Import data """
@@ -46,18 +46,18 @@ y_train = y_train/32768.0*10
 #testFileList = os.listdir(os.path.join(testFilePath, 'input'))
 #testFile = os.path.join(testFilePath, 'input', testFileList[0])
 #print('Testing file name of x: ', testFileList[0])
-#fs, x_test = wavfile.read(testFile)
-#x_test = x_test/32768.0*10
+fs, x_test = wavfile.read(testFilePath)
+x_test = x_test/32768.0*10
 
 # Output testing signal
 #testFileList = os.listdir(os.path.join(testFilePath, 'output'))
 #testFile = os.path.join(testFilePath, 'output', testFileList[0])
 #print('Testing file name of y: ', testFileList[0])
-#fs, y_test = wavfile.read(testFile)
-#y_test = y_test/32768.0*10
+fs, y_test = wavfile.read(testFilePath)
+y_test = y_test/32768.0*10
 
 
-""" Data preprocessing """
+""" Training Data preprocessing """
 # Zero padding
 lenDiff = len(x_train) - len(y_train)
 if lenDiff > 0:
@@ -89,6 +89,25 @@ x_train_data = np.expand_dims(x_train, axis=2)
 y_train_data = np.expand_dims(y_train, axis=2)
 x_validation_data = np.expand_dims(x_validation, axis=2)
 y_validation_data = np.expand_dims(y_validation, axis=2)
+
+
+""" Testing Data Preprocessing """
+# Split every single batch into one row
+dlen_test = np.floor(len(x_test)/abs(seq_len))
+
+# Odd to even
+if (dlen_test % 2) > 0:
+    dlen_test = dlen_test - 1
+
+# Trim data
+x_test = x_test[:int(seq_len*dlen_test)]
+y_test = y_test[:int(seq_len*dlen_test)]
+x_test = np.array_split(x_test, dlen_test)
+y_test = np.array_split(y_test, dlen_test)
+
+# Expand dimension
+x_test_data = np.expand_dims(x_test, axis=2)
+y_test_data = np.expand_dims(y_test, axis=2)
 
 
 """ Neural networks framework """
@@ -130,6 +149,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
     TrainTrueData    = []
     ValidPredictData = []
     ValidTrueData    = []
+    inputData        = []
     trainDataSets = data_source.ArrayDataSource([x_train_data, y_train_data], repeats=1)
     i = 0   # Training iteration
     vi= 0   # Validation iteration
@@ -179,17 +199,17 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
             plt.show()
     
         """ Save model """
-        if e % 60 == 0:
+        if e % 10 == 0:
 #            tf.train.Saver().save(sess, modelSavePath, global_step=e)
             print('Model of No. %f epoch saved!' %e)
         
-#        """ Validation  """
+        """ Validation  """
         validationDataSets = data_source.ArrayDataSource([x_validation_data, 
                                                           y_validation_data], repeats=1)
         for (x_input_v, y_input_v) in validationDataSets.batch_iterator(batch_size=batch_size):
             feed = {x:x_input_v, y:y_input_v, learning_rate_:learning_rate}
-            validLV, _, Predict_validValue, True_validOutput = sess.run([cost,optimizer,yOut,y2],
-                                                                             feed_dict=feed)
+            validLV, _, Predict_validValue, True_validOutput, model_input = sess.run([cost,optimizer,yOut,y2,input],
+                                                                                     feed_dict=feed)
             validLVObj.append(validLV)   
             vi += 1
             if vi % 10 == 0:     # Compute the average loss value of 10 batchs
@@ -198,6 +218,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
             if e == epoch-1:
                 ValidPredictData = np.append(ValidPredictData, Predict_validValue)
                 ValidTrueData    = np.append(ValidTrueData, True_validOutput)
+                inputData        = np.append(inputData, model_input)
             
             # R-Square (coefficient of determination)
             validRS = (np.corrcoef(Predict_validValue, True_validOutput))**2
@@ -220,16 +241,27 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
         plt.pause(1e-17)
         plt.grid(True)
         plt.show() 
-    
-    # Save the final model
-    tf.train.Saver().save(sess, modelSavePath, global_step=e)
+        
+        """ Testing """
+        if e == epoch-1:
+            inverseModelOutput = []
+            inversemodelInput  = []
+            testDataSets = data_source.ArrayDataSource([x_test_data, y_test_data], repeats=1)
+            for (x_input_t, y_input_t) in testDataSets.batch_iterator(batch_size=batch_size):
+                testFeed = {x:x_input_t, y:y_input_t, learning_rate_:learning_rate}
+                inverseModel_output, inversemodel_input = sess.run([yOut,input], feed_dict=testFeed)
+                inverseModelOutput = np.append(inverseModelOutput, inverseModel_output)
+                inversemodelInput  = np.append(inversemodelInput,  inversemodel_input)
     
     # Write to MAT file
     SavePath = r'D:\Dropbox\MachineLearning\CurveFitting_SystemIdentification\Result\TrainingOutput'
-    dict_data= {'Train_Predict': TrainPredictData, 'Train_True': TrainTrueData,
-                'Valid_Predict': ValidPredictData, 'Valid_True': ValidTrueData,
-                'Train_Loss': meanTrainLV, 'Valid_Loss': meanValidLV, 'R_Square': meanRS[e]}
-    sio.savemat(os.path.join(SavePath, 'DenseResult_'+earphone+'.mat'), dict_data)
+#    dict_data= {'Train_Predict': TrainPredictData, 'Train_True': TrainTrueData,
+#                'Valid_Predict': ValidPredictData, 'Valid_True': ValidTrueData,
+#                'Train_Loss':    meanTrainLV,      'Valid_Loss': meanValidLV, 
+#                'R_Square':      meanRS[e],        'inputData':  inputData}
+    dict_data = {'inverseModelOutput': inverseModelOutput, 
+                 'inversemodelInput':  inversemodelInput}
+    sio.savemat(os.path.join(SavePath, 'InverseDenseModelTest_'+earphone+'.mat'), dict_data)
     
     # Count time
     training_time = time.time() - start_time
@@ -237,6 +269,9 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True),
     print('Training time: ' + str(training_time))
     
     print('Final R-square value: %s' %meanRS[e])
+    
+    # Save the final model
+#    tf.train.Saver().save(sess, modelSavePath, global_step=e)
  
     # Memory recycle
     sess.close() 
